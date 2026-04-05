@@ -7,42 +7,130 @@
   const CM_PER_INCH = 2.54;
 
   /**
-   * Attempt to extract bag dimensions from the current page.
-   * Returns an array of detected dimension objects:
-   * { l, w, h, unit: 'cm'|'in', source: 'text snippet' }
+   * Collect all text content from the page, including hidden sources
+   * that innerText would miss:
+   * - <select> / <option> elements (dropdown menus)
+   * - data- attributes that store dimension info
+   * - title / aria-label attributes
+   * - hidden elements with product specs
+   * - <noscript> content
    */
-  function scanPageForDimensions() {
-    const results = [];
-    const bodyText = document.body.innerText;
+  function collectAllText() {
+    const parts = [];
 
-    // Common dimension patterns:
-    // "56 x 36 x 23 cm", "22 x 14 x 9 in", "56x36x23cm"
-    // "56 × 36 × 23 cm", with various spacing
-    // Also handle: L x W x H patterns with labels
-    const dimPatterns = [
-      // 3-number pattern with unit: 56 x 36 x 23 cm
-      /(\d+(?:\.\d+)?)\s*[x×X]\s*(\d+(?:\.\d+)?)\s*[x×X]\s*(\d+(?:\.\d+)?)\s*(cm|centimeters?|mm|millimeters?|in|inch|inches|"|″|''')/gi,
-      // Pattern with unit before: cm: 56 x 36 x 23
-      /(cm|centimeters?|mm|millimeters?|in|inch|inches)\s*[:\s]\s*(\d+(?:\.\d+)?)\s*[x×X]\s*(\d+(?:\.\d+)?)\s*[x×X]\s*(\d+(?:\.\d+)?)/gi,
-      // L x W x H with individual units: 22in x 14in x 9in
-      /(\d+(?:\.\d+)?)\s*(cm|in|inch|inches|"|″|''')\s*[x×X]\s*(\d+(?:\.\d+)?)\s*(cm|in|inch|inches|"|″|''')\s*[x×X]\s*(\d+(?:\.\d+)?)\s*(cm|in|inch|inches|"|″|''')/gi,
+    // 1. Visible page text
+    parts.push(document.body.innerText);
+
+    // 2. All <option> text inside <select> dropdowns
+    document.querySelectorAll('select option').forEach(opt => {
+      if (opt.textContent.trim()) parts.push(opt.textContent);
+      if (opt.value && opt.value !== opt.textContent.trim()) parts.push(opt.value);
+    });
+
+    // 3. All data- attributes that may contain dimensions
+    //    Common patterns: data-size, data-dimensions, data-variant, data-option,
+    //    data-value, data-description, data-specs, data-product-*
+    const dataAttrPatterns = [
+      'data-size', 'data-dimensions', 'data-dimension', 'data-variant',
+      'data-option', 'data-value', 'data-description', 'data-specs',
+      'data-product-name', 'data-product-title', 'data-name', 'data-content',
+      'data-original-title'
     ];
+    document.querySelectorAll('*').forEach(el => {
+      // Check specific known attributes
+      dataAttrPatterns.forEach(attr => {
+        const val = el.getAttribute(attr);
+        if (val) parts.push(val);
+      });
+      // Check all data-* attributes for dimension patterns (lightweight regex)
+      for (const attr of el.attributes || []) {
+        if (attr.name.startsWith('data-') && /\d+\s*[x×]\s*\d+/.test(attr.value)) {
+          parts.push(attr.value);
+        }
+      }
+    });
 
+    // 4. title and aria-label attributes
+    document.querySelectorAll('[title], [aria-label]').forEach(el => {
+      if (el.title) parts.push(el.title);
+      if (el.ariaLabel) parts.push(el.ariaLabel);
+    });
+
+    // 5. <noscript> content
+    document.querySelectorAll('noscript').forEach(el => {
+      parts.push(el.textContent);
+    });
+
+    // 6. Hidden spec tables / divs that are display:none
+    //    (product pages often hide specs in tabs or accordion panels)
+    document.querySelectorAll(
+      '.product-specs, .specifications, .spec-table, ' +
+      '.product-details, .product-description, .tab-pane, ' +
+      '.accordion-content, .panel-body, .collapse, ' +
+      '[class*="spec"], [class*="detail"], [class*="dimension"], ' +
+      '[id*="spec"], [id*="detail"], [id*="dimension"]'
+    ).forEach(el => {
+      // Use textContent to get text even from hidden elements
+      if (el.textContent.trim()) parts.push(el.textContent);
+    });
+
+    // 7. Variant / swatch selectors (common on e-commerce sites)
+    //    Buttons or labels that hold size variant names like "Medium - 46x30x15cm"
+    document.querySelectorAll(
+      '.variant-option, .swatch-option, .size-option, ' +
+      '[class*="variant"], [class*="swatch"], [class*="size-select"], ' +
+      'label[for*="size"], label[for*="variant"], ' +
+      'button[data-variant], button[data-option]'
+    ).forEach(el => {
+      parts.push(el.textContent);
+      // Also check value attributes on associated inputs
+      const forId = el.getAttribute('for');
+      if (forId) {
+        const input = document.getElementById(forId);
+        if (input && input.value) parts.push(input.value);
+      }
+    });
+
+    // 8. Custom dropdown components (non-native <select>)
+    //    Many sites use div-based dropdowns with role="listbox" or role="option"
+    document.querySelectorAll(
+      '[role="listbox"] [role="option"], ' +
+      '[role="combobox"], ' +
+      '.dropdown-item, .dropdown-menu li, ' +
+      '.custom-select-option, ' +
+      '[class*="dropdown"] li, [class*="dropdown"] a, ' +
+      '[class*="listbox"] [class*="option"]'
+    ).forEach(el => {
+      if (el.textContent.trim()) parts.push(el.textContent);
+    });
+
+    return parts.join('\n');
+  }
+
+  /**
+   * Parse a unit string into a normalized unit and multiplier.
+   */
+  function parseUnit(unitRaw) {
+    const u = unitRaw.toLowerCase().trim();
+    if (u.startsWith('in') || u === '"' || u === '″' || u === "''") {
+      return { unit: 'in', multiplier: 1 };
+    }
+    if (u.startsWith('mm') || u === 'millimeter' || u === 'millimeters') {
+      return { unit: 'cm', multiplier: 0.1 };
+    }
+    return { unit: 'cm', multiplier: 1 };
+  }
+
+  /**
+   * Run dimension regex patterns against a text string.
+   */
+  function extractDimensionsFromText(text, results) {
     // Pattern 1: number x number x number unit
     const p1 = /(\d+(?:\.\d+)?)\s*[x×X]\s*(\d+(?:\.\d+)?)\s*[x×X]\s*(\d+(?:\.\d+)?)\s*(cm|centimeters?|mm|millimeters?|in|inch|inches|"|″|''')/gi;
     let match;
-    while ((match = p1.exec(bodyText)) !== null) {
+    while ((match = p1.exec(text)) !== null) {
       const nums = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
-      const unitRaw = match[4].toLowerCase();
-      let unit = 'cm';
-      let multiplier = 1;
-      if (unitRaw.startsWith('in') || unitRaw === '"' || unitRaw === '″' || unitRaw === "''") {
-        unit = 'in';
-      } else if (unitRaw.startsWith('mm') || unitRaw === 'millimeters' || unitRaw === 'millimeter') {
-        unit = 'cm';
-        multiplier = 0.1; // convert mm to cm
-      }
-      // Sort descending to normalize as L >= W >= H
+      const { unit, multiplier } = parseUnit(match[4]);
       nums.sort((a, b) => b - a);
       results.push({
         l: Math.round(nums[0] * multiplier * 100) / 100,
@@ -55,13 +143,10 @@
 
     // Pattern 2: individual units per number like 22in x 14in x 9in
     const p2 = /(\d+(?:\.\d+)?)\s*(cm|in|inch|inches|"|″|''')\s*[x×X]\s*(\d+(?:\.\d+)?)\s*(cm|in|inch|inches|"|″|''')\s*[x×X]\s*(\d+(?:\.\d+)?)\s*(cm|in|inch|inches|"|″|''')/gi;
-    while ((match = p2.exec(bodyText)) !== null) {
-      // Use first unit as the standard
-      const unitRaw = match[2].toLowerCase();
-      const unit = (unitRaw.startsWith('in') || unitRaw === '"' || unitRaw === '″' || unitRaw === "''") ? 'in' : 'cm';
+    while ((match = p2.exec(text)) !== null) {
+      const { unit } = parseUnit(match[2]);
       const nums = [parseFloat(match[1]), parseFloat(match[3]), parseFloat(match[5])];
       nums.sort((a, b) => b - a);
-      // Check if this is a duplicate of p1 results
       const isDuplicate = results.some(r =>
         r.l === nums[0] && r.w === nums[1] && r.h === nums[2] && r.unit === unit
       );
@@ -73,9 +158,54 @@
       }
     }
 
-    // Also try to find dimensions from structured data (JSON-LD)
-    const scripts = document.querySelectorAll('script[type="application/ld+json"]');
-    scripts.forEach(script => {
+    // Pattern 3: labeled dimensions like "Height: 56cm, Width: 36cm, Depth: 23cm"
+    //            or "L: 22" W: 14" H: 9""
+    const labelPattern = /(?:length|height|depth|width|long|tall|wide|deep|L|W|H|D)\s*[:\s]\s*(\d+(?:\.\d+)?)\s*(cm|in|inch|inches|mm|"|″|''')?/gi;
+    const labelMatches = [];
+    while ((match = labelPattern.exec(text)) !== null) {
+      labelMatches.push({
+        value: parseFloat(match[1]),
+        unitRaw: match[2] || '',
+        pos: match.index,
+      });
+    }
+    // If we found exactly 3 labeled dimensions near each other, treat as a set
+    if (labelMatches.length >= 3) {
+      for (let i = 0; i <= labelMatches.length - 3; i++) {
+        const group = labelMatches.slice(i, i + 3);
+        const span = group[2].pos - group[0].pos;
+        // Only group if within 200 chars of each other
+        if (span < 200) {
+          const unitStr = group.find(g => g.unitRaw)?.unitRaw || 'cm';
+          const { unit, multiplier } = parseUnit(unitStr);
+          const nums = group.map(g => Math.round(g.value * multiplier * 100) / 100);
+          nums.sort((a, b) => b - a);
+          const isDuplicate = results.some(r =>
+            r.l === nums[0] && r.w === nums[1] && r.h === nums[2] && r.unit === unit
+          );
+          if (!isDuplicate) {
+            results.push({
+              l: nums[0], w: nums[1], h: nums[2], unit,
+              source: `Labeled: ${nums.join(' x ')} ${unit}`,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Main scan function. Collects text from all page sources and extracts dimensions.
+   */
+  function scanPageForDimensions() {
+    const results = [];
+
+    // Collect text from all sources (including dropdowns, hidden elements, etc.)
+    const allText = collectAllText();
+    extractDimensionsFromText(allText, results);
+
+    // Also try JSON-LD structured data
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(script => {
       try {
         const data = JSON.parse(script.textContent);
         extractFromJsonLd(data, results);
@@ -100,9 +230,7 @@
       data.forEach(item => extractFromJsonLd(item, results));
       return;
     }
-    // Look for Product schema with dimensions
     if (data['@type'] === 'Product' || data['@type'] === 'IndividualProduct') {
-      const dims = data.depth || data.width || data.height;
       if (data.depth && data.width && data.height) {
         const unit = (data.depth.unitCode === 'CMT' || data.depth.unitText === 'cm') ? 'cm' : 'in';
         const nums = [
@@ -114,6 +242,12 @@
           nums.sort((a, b) => b - a);
           results.push({ l: nums[0], w: nums[1], h: nums[2], unit, source: 'JSON-LD structured data' });
         }
+      }
+    }
+    // Recurse into nested objects
+    for (const key of Object.keys(data)) {
+      if (typeof data[key] === 'object' && data[key] !== null) {
+        extractFromJsonLd(data[key], results);
       }
     }
   }
@@ -149,6 +283,6 @@
       const dimensions = scanPageForDimensions();
       sendResponse({ dimensions });
     }
-    return true; // keep channel open for async response
+    return true;
   });
 })();
