@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bag Size Detective</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧳 Bag Size Detective</h1>
+      <p class="subtitle">Check airline baggage compatibility</p>
+    </header>
+
+    <!-- Detected Dimensions Section -->
+    <section id="dimensions-section">
+      <h2>Bag Dimensions</h2>
+      <div id="detected-dims" class="detected-dims">
+        <p class="scanning">Scanning page for dimensions...</p>
+      </div>
+
+      <!-- Manual Input -->
+      <div id="manual-input" class="manual-input">
+        <p class="manual-label">Enter dimensions manually:</p>
+        <div class="unit-toggle">
+          <button id="btn-cm" class="unit-btn active" data-unit="cm">cm</button>
+          <button id="btn-in" class="unit-btn" data-unit="in">inches</button>
+        </div>
+        <div class="dim-inputs">
+          <div class="input-group">
+            <label for="input-l">Length</label>
+            <input type="number" id="input-l" placeholder="0" min="0" step="0.1">
+          </div>
+          <div class="input-group">
+            <label for="input-w">Width</label>
+            <input type="number" id="input-w" placeholder="0" min="0" step="0.1">
+          </div>
+          <div class="input-group">
+            <label for="input-h">Height</label>
+            <input type="number" id="input-h" placeholder="0" min="0" step="0.1">
+          </div>
+        </div>
+        <button id="btn-check" class="btn-check">Check Compatibility</button>
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="results-section" class="hidden">
+      <h2>Your Bag Size</h2>
+      <div id="bag-size-display" class="bag-size-display"></div>
+
+      <div class="results-tabs">
+        <button class="tab-btn active" data-tab="personal">Personal Item</button>
+        <button class="tab-btn" data-tab="carryon">Carry-On</button>
+      </div>
+
+      <div id="results-list" class="results-list"></div>
+    </section>
+  </div>
+
+  <script src="airlines.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

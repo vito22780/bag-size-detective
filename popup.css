@@ -1,0 +1,339 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 400px;
+  max-height: 600px;
+  overflow-y: auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f7fa;
+  color: #1a1a2e;
+}
+
+.container {
+  padding: 16px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+header h1 {
+  font-size: 20px;
+  color: #1a1a2e;
+  margin-bottom: 2px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+h2 {
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* Detected dimensions */
+.detected-dims {
+  margin-bottom: 12px;
+}
+
+.scanning {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 8px;
+}
+
+.dim-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dim-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.dim-card.selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.dim-card .dim-values {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.dim-card .dim-converted {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.dim-card .dim-source {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.no-dims-found {
+  text-align: center;
+  color: #ef4444;
+  font-size: 13px;
+  padding: 8px;
+  background: #fef2f2;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+/* Manual input */
+.manual-input {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.manual-label {
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 8px;
+}
+
+.unit-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.unit-btn {
+  flex: 1;
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.unit-btn.active {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+
+.dim-inputs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.input-group {
+  flex: 1;
+}
+
+.input-group label {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.btn-check {
+  width: 100%;
+  padding: 10px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-check:hover {
+  background: #2563eb;
+}
+
+/* Results */
+.bag-size-display {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.bag-size-display .size-line {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.bag-size-display .size-cm {
+  color: #1e40af;
+}
+
+.bag-size-display .size-in {
+  color: #6b7280;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.results-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background: #1e40af;
+  color: #fff;
+  border-color: #1e40af;
+}
+
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.airline-row {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  gap: 10px;
+  transition: all 0.2s;
+}
+
+.airline-row.pass {
+  border-left: 4px solid #10b981;
+}
+
+.airline-row.fail {
+  border-left: 4px solid #ef4444;
+  opacity: 0.75;
+}
+
+.airline-status {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.airline-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.airline-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.airline-limit {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 1px;
+}
+
+.airline-limit-detail {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Scrollbar */
+body::-webkit-scrollbar {
+  width: 6px;
+}
+
+body::-webkit-scrollbar-track {
+  background: #f5f7fa;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.summary-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.summary-item {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.summary-pass {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.summary-fail {
+  background: #fee2e2;
+  color: #991b1b;
+}
